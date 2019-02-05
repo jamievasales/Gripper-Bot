@@ -1,0 +1,10 @@
+<launch>
+		<node name="arbotix" pkg="arbotix_python" type="arbotix_driver" output="log">
+			<rosparam file="$(find arbotix_python)/config/default.yaml" command="load"/>
+		</node>
+		<node name="gripper_controller" pkg="arbotix_controllers" type="gripper_controller" output="log">
+			<param name="model" value="singlesided"/>
+			<param name="invert" value="true"/>
+			<param name="pad_width" value="0.0254"/>
+		</node>
+	</launch>

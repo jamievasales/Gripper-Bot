@@ -1,0 +1,11 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+initCellHasBlock(2,2,1).
+initCellHasBlock(1,2,2).
+initCellHasBlock(2,3,3).
+initCellHasBlock(1,3,4).
+initCellHasBlock(1,4,5).
+initCellHasBlock(1,1,6).
+goalPlatform(1).
