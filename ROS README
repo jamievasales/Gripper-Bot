@@ -1,0 +1,123 @@
+
+
+Installing ROS Kinetics on Ubuntu 16.04 ('Xenial').
+Ideally, the console command lines (i.e., starting with '$') should be executed line-by-line rather than all at once.
+
+
+
+The lines below are for the installation of ROS:
+
+	sudo sh -c '. /etc/lsb-release && echo "deb http://mirror.umd.edu/packages.ros.org/ros/ubuntu xenial main" > /etc/apt/sources.list.d/ros-latest.list'
+	wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -O - | sudo apt-key add -
+	sudo apt-get update
+	sudo apt-get install ros-kinetic-desktop-*
+	sudo rosdep init
+	rosdep update
+	echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
+	source ~/.bashrc
+	sudo apt-get install python-rosinstall
+
+To test the ROS installation enter "roscore" and if successful, last line should print "started core service [/rosout]".
+
+
+
+Finally, the following lines installs the ROS packages for the Arbotix board interaface:
+
+	mkdir -p ~/catkin_ws/src
+	cd ~/catkin_ws/
+	catkin_make
+
+
+
+Then add the following line (i.e., as enclosed by "") to the "~/.bashrc" file to source your new catkin_ws:
+
+	"source ~catkin_ws/devel/setup.bash"
+
+
+
+To following lines makes the ROS packages for the Arbotix board interface ofthe Dynamixel servo motors of the PhantomX Pincher arm:
+
+	cd ~/catkin_ws/src
+	git clone https://github.com/vanadiumlabs/arbotix_ros.git
+	cd ~/catkin_ws
+	catkin_make -DCMAKE_BUILD_TYPE=Release
+	source ~/catkin_ws/devel/setup.bash
+
+Then run the following to give sudo privelleges for port ttyUSB0
+
+	sudo usermod -a -G dialout $USER
+
+
+To test for a correct installation and with the correct configuration of environment variables, with the Arbotix board of the PhantomX Pincher arm connected to a USB port:
+
+	1.) The port "ttyUSB0" should be visible in the folder "/dev";
+	2.) Run the following in the console (i.e., "arbotix_terminal" then "ls" after the ">>" comes up):
+
+			arbotix_terminal
+			>> ls
+
+		Then you should see the numbers:
+
+			1    2    3    4    5 .... .... .... ....
+
+        as arbotix_terminal "pings" the five Dynamixel servos with IDs 1, 2, 3, 4 and 5.
+
+
+
+Now make the following two folders named: "config" and "launch", within the "~/catkin_ws/src/arbotix_ros/arbotix_python" directory.
+
+
+
+Then, copy and paste the following into a file named "default.yaml" and save into the  "~/catkin_ws/src/arbotix_ros/arbotix_python/config" directory:
+
+	port: /dev/ttyUSB0
+	rate: 20
+	joints: {
+		arm_shoulder_pan_joint: {id: 1, max_angle: 100, min_angle: -100, max_speed: 50},
+		arm_shoulder_lift_joint: {id: 2, max_angle: 100, min_angle: -100, max_speed: 50},
+		arm_elbow_flex_joint: {id: 3, max_angle: 100, min_angle: -100, max_speed: 50},
+		arm_wrist_flex_joint: {id: 4, max_angle: 100, min_angle: -100, max_speed: 50},
+		gripper_joint: {id: 5, max_angle: 100, min_angle: -100, max_speed: 50}
+	}
+	controllers: {
+		arm_controller: {type: follow_controller, joints: [arm_shoulder_pan_joint, arm_shoulder_lift_joint, arm_elbow_flex_joint, arm_wrist_flex_joint, gripper_joint],
+        action_name: arm_controller/follow_joint_trajectory, onboard: False }
+	}
+
+
+
+Similarly, copy and paste the following into a file named "phantomX_arm.launch" and save into the  "~/catkin_ws/src/arbotix_ros/arbotix_python/launch" directory:
+
+	<launch>
+		<node name="arbotix" pkg="arbotix_python" type="arbotix_driver" output="screen">
+			<rosparam file="$(find arbotix_python)/config/default.yaml" command="load"/>
+		</node>
+		<node name="gripper_controller" pkg="arbotix_controllers" type="gripper_controller" output="screen">
+			<param name="model" value="singlesided"/>
+			<param name="invert" value="true"/>
+			<param name="pad_width" value="0.0254"/>
+		</node>
+	</launch>
+
+
+
+
+Then to launch the ROS interface drivers:
+
+	roslaunch arbotix_python phantomX_arm.launch
+
+Then to open up the controller GUI "arbotix_gui"
+
+	arbotix_gui
+
+
+Further test by publishing into one of the "/arm_shoulder_pan_joint/command", "/arm_shoulder_lift_joint/command", "/arm_elbow_flex_joint/command", "/arm_wrist_flex_joint/command" or "/gripper_joint/command" topics (each are of type "std_msgs/Float64"). E.g., the following series of publish commands centres all the servos and makes the arm stand upright:
+
+	rostopic pub -1 /arm_shoulder_pan_joint/command std_msgs/Float64 -- 0.0
+	rostopic pub -1 /arm_elbow_flex_joint/command std_msgs/Float64 -- 0.0
+	rostopic pub -1 /arm_wrist_flex_joint/command std_msgs/Float64 -- 0.0
+	rostopic pub -1 /arm_shoulder_lift_joint/command std_msgs/Float64 -- 0.0
+	rostopic pub -1 /gripper_joint/command std_msgs/Float64 -- 1.0
+
+
+4 pegs 6 blocks
